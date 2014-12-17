@@ -180,7 +180,12 @@ module Gersberms
       @key_pair.delete if @key_pair
     end
 
+    def preflight
+      fail "AMI #{@options[:ami_name]} already exists" if @ec2.images[@options[:ami_name]].exists?
+    end
+
     def bake
+      preflight
       create_keypair
       create_instance
       install_chef
