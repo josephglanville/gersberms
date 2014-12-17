@@ -62,4 +62,18 @@ Gersberms.bake(config)
 
 ```ruby
 require 'gersberms/rake_task'
+
+Gersberms::RakeTask.new(:ami) do |ami|
+  ami.ssh_user = 'ubuntu'
+  ami.base_ami = 'ami-950b62af'
+  ami.instance_type = 't2.micro'
+  ami.ami_name = 'example-ami'
+  ami.security_groups = ['example_security_group']
+  ami.runlist = ['example_cookbook::default']
+  ami.json = {
+    example_cookbook: {
+      example_attribute: 'example_value'
+    }
+  }
+end
 ```
