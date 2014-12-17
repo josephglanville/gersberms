@@ -140,10 +140,7 @@ module Gersberms
 
     def create_ami
       puts "Creating AMI: #{@options[:ami_name]}"
-      @image = @instance.create_image(
-        @options[:ami_name],
-        no_reboot: true
-      )
+      @image = @instance.create_image(@options[:ami_name])
       @options[:tags].each do |tag|
         puts "Adding tag to AMI: #{tag}"
         @image.add_tag(tag)
@@ -155,6 +152,12 @@ module Gersberms
       end
       puts "Waiting until AMI: #{@options[:ami_name]} becomes available"
       sleep 1 until @instance.state == :available
+    end
+
+    def stop_instance
+      puts "Stopping instance: #{@instance.id}"
+      @instance.stop
+      sleep 1 until @instance.status == :stopped
     end
 
     def destroy_instance
@@ -175,6 +178,7 @@ module Gersberms
       install_chef
       upload_cookbooks
       run_chef
+      stop_instance
       create_ami
       destroy_instance
       destroy_keypair
