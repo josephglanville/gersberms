@@ -44,10 +44,10 @@ require 'gersberms'
 config = {
   ssh_user: 'ubuntu',
   base_ami: 'ami-950b62af'
-  instance_type: 't2.micro'
+  instance_type: 't2.micro',
   ami_name: 'example-ami',
   security_groups: ['example_security_group'],
-  runlist: [example_cookbook::default]
+  runlist: ['example_cookbook::default'],
   json: {
     example_cookbook: {
       example_attribute: "example_value"
