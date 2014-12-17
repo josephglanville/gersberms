@@ -159,7 +159,7 @@ module Gersberms
         @image.permissions.add(*@options[:share_accounts])
       end
       puts "Waiting until AMI: #{@options[:ami_name]} becomes available"
-      sleep 1 until @instance.state == :available
+      sleep 1 until @image.state == :available
     end
 
     def stop_instance
