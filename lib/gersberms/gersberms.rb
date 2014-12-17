@@ -118,13 +118,17 @@ module Gersberms
     end
 
     def upload_cookbooks
-      puts "Uploading cookbooks"
+      puts "Vendoring cookbooks"
       berksfile = Berkshelf::Berksfile.from_file(@options[:berksfile])
       berksfile.vendor(@options[:vendor_path])
       ssh do |s|
+        puts "Creating #{CHEF_PATH}"
         s.exec!("mkdir -p #{CHEF_PATH}")
+        puts "Creating #{chef_path('solo.rb')}"
         s.scp.upload!(chef_config, chef_path('solo.rb'))
+        puts "Uploading cookbooks to #{chef_path('cookbooks')}"
         s.scp.upload!(@options[:vendor_path], chef_path('cookbooks'), recursive: true)
+        puts "Create #{chef_path('node.json')}"
         s.scp.upload!(chef_json, chef_path('node.json'))
       end
     end
@@ -182,7 +186,8 @@ module Gersberms
       create_ami
       destroy_instance
       destroy_keypair
-    rescue
+    rescue => e
+      puts "Failed!: #{e.message} \n#{e.backtrace.join("\n")}"
       destroy_instance
       destroy_keypair
     end
