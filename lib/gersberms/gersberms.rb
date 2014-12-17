@@ -70,6 +70,10 @@ module Gersberms
         key_data: [@key_pair.private_key],
         &block
       )
+    rescue Timeout::Error, Errno::EHOSTUNREACH, Errno::ECONNREFUSED => e
+      puts "#{e.message} handled while trying to SSH, retrying..."
+      sleep 1
+      retry
     end
 
     def cmd(command)
