@@ -92,7 +92,7 @@ module Gersberms
       StringIO.new <<-EOF
         file_cache_path    "/var/chef/cache"
         file_backup_path   "/var/chef/backup"
-        cookbook_path ['/tmp/gersberms-chef/cookbooks']
+        cookbook_path ['#{chef_path('cookbooks')}']
         if Chef::VERSION.to_f < 11.8
           role_path nil
         else
@@ -112,7 +112,7 @@ module Gersberms
     end
 
     def chef_json
-      StringIO.new(@options[:json].to_json)
+      StringIO.new(JSON.pretty_generate(@options[:json]))
     end
 
     def install_chef
@@ -134,6 +134,7 @@ module Gersberms
         s.scp.upload!(@options[:vendor_path], chef_path('cookbooks'), recursive: true)
         puts "Create #{chef_path('node.json')}"
         s.scp.upload!(chef_json, chef_path('node.json'))
+        puts s.exec!("cat #{chef_path('node.json')}")
       end
     end
 
@@ -143,7 +144,10 @@ module Gersberms
       command += " --config #{chef_path('solo.rb')}"
       command += " --json-attributes #{chef_path('node.json')}"
       command += " --override-runlist '#{@options[:runlist].join(',')}'"
-      cmd(command)
+      puts command
+      output = cmd(command)
+      puts "Chef output:"
+      puts output
     end
 
     def create_ami
@@ -158,6 +162,10 @@ module Gersberms
         puts "Sharing AMI with: #{@options[:share_accounts]}"
         @image.permissions.add(*@options[:share_accounts])
       end
+
+      puts "Waiting until AMI: #{@options[:ami_name]} exists"
+      sleep 1 until @image.exists?
+
       puts "Waiting until AMI: #{@options[:ami_name]} becomes available"
       sleep 1 until @image.state == :available
     end
