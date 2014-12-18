@@ -168,6 +168,8 @@ module Gersberms
 
       puts "Waiting until AMI: #{@options[:ami_name]} becomes available"
       sleep 1 until @image.state == :available
+      
+      puts "AMI #{@image.id} created sucessfully"
     end
 
     def stop_instance
