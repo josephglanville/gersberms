@@ -52,7 +52,7 @@ module Gersberms
     end
 
     def create_instance
-      puts "Creating instance"
+      logger.info "Creating instance"
       @instance = @ec2.instances.create(
         image_id: @options[:base_ami],
         instance_type: @options[:instance_type],
@@ -136,15 +136,15 @@ module Gersberms
       berksfile = Berkshelf::Berksfile.from_file(@options[:berksfile])
       berksfile.vendor(@options[:vendor_path])
       ssh do |s|
-        puts "Creating #{CHEF_PATH}"
+        logger.debug "Creating #{CHEF_PATH}"
         s.exec!("mkdir -p #{CHEF_PATH}")
-        puts "Creating #{chef_path('solo.rb')}"
+        logger.debug "Creating #{chef_path('solo.rb')}"
         s.scp.upload!(chef_config, chef_path('solo.rb'))
-        puts "Uploading cookbooks to #{chef_path('cookbooks')}"
+        logger.debug "Uploading cookbooks to #{chef_path('cookbooks')}"
         s.scp.upload!(@options[:vendor_path], chef_path('cookbooks'), recursive: true)
-        puts "Create #{chef_path('node.json')}"
+        logger.debug "Create #{chef_path('node.json')}"
         s.scp.upload!(chef_json, chef_path('node.json'))
-        puts s.exec!("cat #{chef_path('node.json')}")
+        logger.debug s.exec!("cat #{chef_path('node.json')}")
       end
     end
 
