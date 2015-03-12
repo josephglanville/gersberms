@@ -26,7 +26,9 @@ module Gersberms
       ami_name: 'gersberms-ami',
       tags: [],
       accounts: [],
-      logger: Logger.new(STDOUT)
+      # Gersberms options
+      logger: Logger.new(STDOUT),
+      max_ssh_attempts: 60
     }
 
     def initialize(options = {})
@@ -65,10 +67,11 @@ module Gersberms
     end
 
     def wait_for_ssh
-      sleep 10 # TODO(jpg): do this properly
+      cmd('true')
     end
 
     def ssh(&block)
+      attempts = 0
       Net::SSH.start(
         @instance.public_ip_address,
         @options[:ssh_user],
@@ -76,9 +79,11 @@ module Gersberms
         &block
       )
     rescue Timeout::Error, Errno::EHOSTUNREACH, Errno::ECONNREFUSED => e
-      logger.warn "#{e.message} handled while trying to SSH, retrying..."
       sleep 1
-      retry
+      attempts += 1
+      retry unless attempts > @options[:max_ssh_attempts]
+      logger.error "Exceeded max SSH attempts: #{@options[:max_ssh_attempts]}"
+      raise
     end
 
     def cmd(command)
