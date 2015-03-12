@@ -25,12 +25,17 @@ module Gersberms
       # AMI options
       ami_name: 'gersberms-ami',
       tags: [],
-      accounts: []
+      accounts: [],
+      logger: Logger.new(STDOUT)
     }
 
     def initialize(options = {})
       @ec2 = AWS::EC2.new
       @options = DEFAULT_OPTIONS.merge(options)
+    end
+
+    def logger
+      @options[:logger]
     end
 
     # TODO(jpg): move this
@@ -40,7 +45,7 @@ module Gersberms
 
     def create_keypair
       name = 'gersberms-' + rand
-      puts "Creating keypair: #{name}"
+      logger.info "Creating keypair: #{name}"
       @key_pair = @ec2.key_pairs.create(name)
     end
 
@@ -53,10 +58,10 @@ module Gersberms
         key_pair: @key_pair,
         security_groups: @options[:security_groups]
       )
-      puts "Launched instance #{@instance.id}, waiting to become running"
+      logger.info "Launched instance #{@instance.id}, waiting to become running"
       sleep 1 until @instance.status == :running
       wait_for_ssh
-      puts "Instance now running"
+      logger.info "Instance now running"
     end
 
     def wait_for_ssh
@@ -71,7 +76,7 @@ module Gersberms
         &block
       )
     rescue Timeout::Error, Errno::EHOSTUNREACH, Errno::ECONNREFUSED => e
-      puts "#{e.message} handled while trying to SSH, retrying..."
+      logger.warn "#{e.message} handled while trying to SSH, retrying..."
       sleep 1
       retry
     end
@@ -116,13 +121,13 @@ module Gersberms
     end
 
     def install_chef
-      puts "Installing Chef"
+      logger.info "Installing Chef"
       # TODO(jpg): means to force upgrade of Chef etc.
       cmd('which chef-solo || curl -L https://www.opscode.com/chef/install.sh | sudo bash')
     end
 
     def upload_cookbooks
-      puts "Vendoring cookbooks"
+      logger.info "Vendoring cookbooks"
       berksfile = Berkshelf::Berksfile.from_file(@options[:berksfile])
       berksfile.vendor(@options[:vendor_path])
       ssh do |s|
@@ -139,54 +144,54 @@ module Gersberms
     end
 
     def run_chef
-      puts "Running Chef"
+      logger.info "Running Chef"
       command = 'sudo chef-solo'
       command += " --config #{chef_path('solo.rb')}"
       command += " --json-attributes #{chef_path('node.json')}"
       command += " --override-runlist '#{@options[:runlist].join(',')}'"
-      puts command
+      logger.debug command
       output = cmd(command)
-      puts "Chef output:"
-      puts output
+      logger.debug "Chef output:"
+      logger.debug output
     end
 
     def create_ami
-      puts "Creating AMI: #{@options[:ami_name]}"
+      logger.info "Creating AMI: #{@options[:ami_name]}"
       @image = @instance.create_image(@options[:ami_name])
       @options[:tags].each do |tag|
-        puts "Adding tag to AMI: #{tag}"
+        logger.info "Adding tag to AMI: #{tag}"
         @image.add_tag(tag)
       end
       
       if @options[:share_accounts]
-        puts "Sharing AMI with: #{@options[:share_accounts]}"
+        logger.info "Sharing AMI with: #{@options[:share_accounts]}"
         @image.permissions.add(*@options[:share_accounts])
       end
 
-      puts "Waiting until AMI: #{@options[:ami_name]} exists"
+      logger.debug "Waiting until AMI: #{@options[:ami_name]} exists"
       sleep 1 until @image.exists?
 
-      puts "Waiting until AMI: #{@options[:ami_name]} becomes available"
+      logger.debug "Waiting until AMI: #{@options[:ami_name]} becomes available"
       sleep 1 until @image.state == :available
       
-      puts "AMI #{@image.id} created sucessfully"
+      logger.info "AMI #{@image.id} created sucessfully"
     end
 
     def stop_instance
-      puts "Stopping instance: #{@instance.id}"
+      logger.info "Stopping instance: #{@instance.id}"
       @instance.stop
       sleep 1 until @instance.status == :stopped
     end
 
     def destroy_instance
       return unless @instance
-      puts "Destroying instance: #{@instance.id}"
+      logger.info "Destroying instance: #{@instance.id}"
       @instance.terminate
       sleep 1 until @instance.status == :terminated
     end
 
     def destroy_keypair
-      puts "Destroying keypair: #{@key_pair.name}"
+      logger.info "Destroying keypair: #{@key_pair.name}"
       @key_pair.delete if @key_pair
     end
 
@@ -206,7 +211,7 @@ module Gersberms
       destroy_instance
       destroy_keypair
     rescue => e
-      puts "Failed!: #{e.message} \n#{e.backtrace.join("\n")}"
+      logger.error "Failed!: #{e.message} \n#{e.backtrace.join("\n")}"
       destroy_instance
       destroy_keypair
     end
