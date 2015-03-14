@@ -26,6 +26,9 @@ module Gersberms
       ami_name: 'gersberms-ami',
       tags: [],
       accounts: [],
+      # Additional files or directories to upload
+      # files: [{ source: '.',  destination: '/tmp/staging' }]
+      files: []
       # Gersberms options
       logger: Logger.new(STDOUT),
       max_ssh_attempts: 60
@@ -131,6 +134,16 @@ module Gersberms
       cmd('which chef-solo || curl -L https://www.opscode.com/chef/install.sh | sudo bash')
     end
 
+    def upload_files
+      return unless @options[:files].count > 1
+      puts 'Uploading files'
+      ssh do |s|
+        @options[:files].each do |f|
+          s.scp.upload!(f[:source], f[:destination], recursive: true)
+        end
+      end
+    end
+
     def upload_cookbooks
       logger.info "Vendoring cookbooks"
       berksfile = Berkshelf::Berksfile.from_file(@options[:berksfile])
@@ -210,6 +223,7 @@ module Gersberms
       create_instance
       install_chef
       upload_cookbooks
+      upload_files
       run_chef
       stop_instance
       create_ami
