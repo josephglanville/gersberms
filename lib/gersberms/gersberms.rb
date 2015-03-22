@@ -28,7 +28,7 @@ module Gersberms
       accounts: [],
       # Additional files or directories to upload
       # files: [{ source: '.',  destination: '/tmp/staging' }]
-      files: []
+      files: [],
       # Gersberms options
       logger: Logger.new(STDOUT),
       max_ssh_attempts: 60
@@ -229,11 +229,11 @@ module Gersberms
       create_ami
       destroy_instance
       destroy_keypair
+      @image.id
     rescue => e
       logger.error "Failed!: #{e.message} \n#{e.backtrace.join("\n")}"
       destroy_instance
       destroy_keypair
     end
-    @image.id
   end
 end
