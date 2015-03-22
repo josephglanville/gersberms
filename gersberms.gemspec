@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
 
   # Runtime
   s.add_runtime_dependency('berkshelf', '~> 3.2.1')
-  s.add_runtime_dependency('aws-sdk', '~> 1.59.1')
+  s.add_runtime_dependency('aws-sdk', '~> 1.0')
   s.add_runtime_dependency('net-ssh', '~> 2.9.1')
   s.add_runtime_dependency('net-scp', '~> 1.2.1')
   s.add_runtime_dependency('rake')
