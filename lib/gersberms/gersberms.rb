@@ -6,7 +6,7 @@ require 'net/scp'
 
 module Gersberms
   class Gersberms
-    attr_accessor :options, :key_pair
+    attr_accessor :options, :key_pair, :image
 
     CHEF_PATH = '/tmp/gersberms-chef'
 
@@ -234,5 +234,6 @@ module Gersberms
       destroy_instance
       destroy_keypair
     end
+    @image.id
   end
 end
