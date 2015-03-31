@@ -33,22 +33,20 @@ module Gersberms
   class RakeTask < Rake::TaskLib
     ATTRS = [:ssh_user, :base_ami, :instance_type, :security_groups, :accounts,
              :subnet, :berksfile, :vendor_path, :runlist, :json, :ami_name, :tags]
-    attr_accessor *ATTRS
+    attr_accessor(*ATTRS)
 
     def initialize(*task_args, &task_block)
-       task_block.call(*[self, task_args].slice(0, task_block.arity)) if task_block
+      task_block.call(*[self, task_args].slice(0, task_block.arity)) if task_block
 
-       desc 'Build AMI using Gersberms' unless Rake.application.last_comment
-       task @name do
-         baker = Gersberms.new(self.to_h)
-         baker.bake
-       end
+      desc 'Build AMI using Gersberms' unless Rake.application.last_comment
+      task @name do
+        baker = Gersberms.new(to_h)
+        baker.bake
+      end
     end
 
     def to_h
-      ATTRS.each_with_object({}) do |k,m|
-        m[k] = self.send(k)
-      end.delete_if {|k, v| v.nil?}
+      ATTRS.each_with_object({}) { m[k] = send(k) }.delete_if { |k, v| v.nil? }
     end
   end
 end

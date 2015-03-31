@@ -45,7 +45,7 @@ module Gersberms
 
     # TODO(jpg): move this
     def rand
-      ('a'..'z').to_a.shuffle[0,8].join
+      ('a'..'z').to_a.shuffle[0, 8].join
     end
 
     def create_keypair
@@ -55,7 +55,7 @@ module Gersberms
     end
 
     def create_instance
-      logger.info "Creating instance"
+      logger.info 'Creating instance'
       @instance = @ec2.instances.create(
         image_id: @options[:base_ami],
         instance_type: @options[:instance_type],
@@ -66,7 +66,7 @@ module Gersberms
       logger.info "Launched instance #{@instance.id}, waiting to become running"
       sleep 1 until @instance.status == :running
       wait_for_ssh
-      logger.info "Instance now running"
+      logger.info 'Instance now running'
     end
 
     def wait_for_ssh
@@ -129,7 +129,7 @@ module Gersberms
     end
 
     def install_chef
-      logger.info "Installing Chef"
+      logger.info 'Installing Chef'
       # TODO(jpg): means to force upgrade of Chef etc.
       cmd('which chef-solo || curl -L https://www.opscode.com/chef/install.sh | sudo bash')
     end
@@ -145,7 +145,7 @@ module Gersberms
     end
 
     def upload_cookbooks
-      logger.info "Vendoring cookbooks"
+      logger.info 'Vendoring cookbooks'
       berksfile = Berkshelf::Berksfile.from_file(@options[:berksfile])
       berksfile.vendor(@options[:vendor_path])
       ssh do |s|
@@ -162,14 +162,14 @@ module Gersberms
     end
 
     def run_chef
-      logger.info "Running Chef"
+      logger.info 'Running Chef'
       command = 'sudo chef-solo'
       command += " --config #{chef_path('solo.rb')}"
       command += " --json-attributes #{chef_path('node.json')}"
       command += " --override-runlist '#{@options[:runlist].join(',')}'"
       logger.debug command
       output = cmd(command)
-      logger.debug "Chef output:"
+      logger.debug 'Chef output:'
       logger.debug output
     end
 
@@ -180,7 +180,7 @@ module Gersberms
         logger.info "Adding tag to AMI: #{tag}"
         @image.add_tag(tag)
       end
-      
+
       if @options[:share_accounts]
         logger.info "Sharing AMI with: #{@options[:share_accounts]}"
         @image.permissions.add(*@options[:share_accounts])
@@ -191,7 +191,7 @@ module Gersberms
 
       logger.debug "Waiting until AMI: #{@options[:ami_name]} becomes available"
       sleep 1 until @image.state == :available
-      
+
       logger.info "AMI #{@image.id} created sucessfully"
     end
 
