@@ -61,7 +61,7 @@ module Gersberms
         instance_type: @options[:instance_type],
         count: 1,
         key_pair: @key_pair,
-        security_groups: @options[:security_groups]
+        security_group_ids: @options[:security_groups]
       }
       create_options[:subnet] = @options[:subnet] if @options[:subnet]
       @instance = @ec2.instances.create(create_options)
