@@ -56,13 +56,15 @@ module Gersberms
 
     def create_instance
       logger.info 'Creating instance'
-      @instance = @ec2.instances.create(
+      create_options = {
         image_id: @options[:base_ami],
         instance_type: @options[:instance_type],
         count: 1,
         key_pair: @key_pair,
         security_groups: @options[:security_groups]
-      )
+      }
+      create_options[:subnet] = @options[:subnet] if @options[:subnet]
+      @instance = @ec2.instances.create(create_options)
       logger.info "Launched instance #{@instance.id}, waiting to become running"
       sleep 1 until @instance.status == :running
       wait_for_ssh
