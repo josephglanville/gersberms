@@ -16,7 +16,7 @@ module Gersberms
       base_ami: 'ami-950b62af',
       instance_type: 't2.micro',
       public_address: true,
-      security_groups: [],
+      security_groups: nil,
       subnet: nil,
       # Chef options
       berksfile: 'Berksfile',
@@ -62,9 +62,9 @@ module Gersberms
         instance_type: @options[:instance_type],
         count: 1,
         key_pair: @key_pair,
-        security_group_ids: @options[:security_groups],
         associate_public_ip_address: @options[:public_address]
       }
+      create_options[:security_group_ids] = @options[:security_groups] if @options[:security_groups]
       create_options[:subnet] = @options[:subnet] if @options[:subnet]
       @instance = @ec2.instances.create(create_options)
       logger.info "Launched instance #{@instance.id}, waiting to become running"
