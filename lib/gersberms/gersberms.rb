@@ -67,6 +67,7 @@ module Gersberms
       create_options[:security_group_ids] = @options[:security_groups] if @options[:security_groups]
       create_options[:subnet] = @options[:subnet] if @options[:subnet]
       @instance = @ec2.instances.create(create_options)
+      sleep 1 until @instance.exists?
       logger.info "Launched instance #{@instance.id}, waiting to become running"
       sleep 1 until @instance.status == :running
       wait_for_ssh
