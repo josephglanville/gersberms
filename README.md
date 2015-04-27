@@ -4,8 +4,7 @@ Build AMIs the right way with chef-solo and Berkshelf.
 
 ## Installation
 
-For now Gersberms is not yet released on RubyGems.org, so currently you will need to install from
-Github.
+    $ gem install gersberms
 
 ## Usage
 
@@ -33,9 +32,7 @@ json:
 
 Which you can then use with the `bake` command like so:
 
-```
-gersberms bake --config=config.yml
-```
+   $ gersberms bake --config=config.yml
 
 ### Library
 ```ruby
