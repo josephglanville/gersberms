@@ -28,6 +28,9 @@ runlist:
 json:
   example_cookbook:
     example_attribute: example_value
+files:
+  - source: '.'
+    destination: '/tmp/staging'
 ```
 
 Which you can then use with the `bake` command like so:
@@ -49,7 +52,10 @@ config = {
     example_cookbook: {
       example_attribute: "example_value"
     }
-  }
+  },
+  files: [
+    { source: '.', destination: '/tmp/staging' }
+  ]
 }
 
 Gersberms.bake(config)
@@ -72,5 +78,8 @@ Gersberms::RakeTask.new(:ami) do |ami|
       example_attribute: 'example_value'
     }
   }
+  ami.files = [
+    { source: '.', destination: '/tmp/staging' }
+  ]
 end
 ```

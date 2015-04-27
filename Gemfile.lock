@@ -4,6 +4,7 @@ PATH
     gersberms (1.0.0)
       aws-sdk (~> 1.0)
       berkshelf (~> 3.2)
+      hashie (~> 2.0)
       net-scp (~> 1.2)
       net-ssh (~> 2.9)
       rake (~> 10.4)

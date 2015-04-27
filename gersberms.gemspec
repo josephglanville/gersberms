@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.executables = ['gersberms']
 
   s.add_dependency('berkshelf', '~> 3.2')
+  s.add_dependency('hashie', '~> 2.0')
   s.add_dependency('aws-sdk', '~> 1.0')
   s.add_dependency('net-ssh', '~> 2.9')
   s.add_dependency('net-scp', '~> 1.2')

@@ -37,7 +37,7 @@ module Gersberms
 
     def initialize(options = {})
       @ec2 = AWS::EC2.new
-      @options = DEFAULT_OPTIONS.merge(options)
+      @options = Hashie::Mash.new(DEFAULT_OPTIONS.merge(options))
     end
 
     def logger
