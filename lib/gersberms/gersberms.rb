@@ -32,7 +32,8 @@ module Gersberms
       files: [],
       # Gersberms options
       logger: Logger.new(STDOUT),
-      max_ssh_attempts: 60
+      max_ssh_attempts: 60,
+      interactive: false
     }
 
     def initialize(options = {})
@@ -218,6 +219,21 @@ module Gersberms
       @key_pair.delete if @key_pair
     end
 
+    def interact
+      logger.info "Pausing to allow user to interact with #{@instance.id}"
+      key_path = File.join('/tmp', @instance.id + '.pem')
+      File.write(key_path, @key_pair.private_key)
+      File.chmod(0600, key_path)
+      puts <<-EOF
+You can ssh to the instance with the following:
+
+    ssh #{@options[:ssh_user]}@#{@instance.public_ip_address} -i #{key_path}
+
+When you are done hit Enter to continue.
+      EOF
+      key = STDIN.gets until key == "\n"
+    end
+
     def preflight
       fail "AMI #{@options[:ami_name]} already exists" if @ec2.images[@options[:ami_name]].exists?
     end
@@ -226,10 +242,12 @@ module Gersberms
       preflight
       create_keypair
       create_instance
+      interact if @options[:interactive]
       install_chef
       upload_cookbooks
       upload_files
       run_chef
+      interact if @options[:interactive]
       stop_instance
       create_ami
       destroy_instance
