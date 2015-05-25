@@ -1,12 +1,16 @@
 require 'aws-sdk'
 require 'berkshelf'
+require 'fileutils'
 require 'json'
 require 'net/ssh'
 require 'net/scp'
+require 'gersberms/errors'
 
 module Gersberms
   class Gersberms
-    attr_accessor :options, :key_pair, :image
+    include Errors
+
+    attr_accessor :options, :key_pair, :key_path, :image
 
     CHEF_PATH = '/tmp/gersberms-chef'
 
@@ -97,8 +101,43 @@ module Gersberms
 
     def cmd(command)
       ssh do |s|
-        s.exec!(command)
+        stdout_data = ""
+        stderr_data = ""
+        exit_code = nil
+        exit_signal = nil
+        s.open_channel do |channel|
+          channel.exec(command) do |ch, success|
+            unless success
+              abort "FAILED: couldn't execute command (ssh.channel.exec)"
+            end
+            channel.on_data do |ch,data|
+              stdout_data+=data
+            end
+
+            channel.on_extended_data do |ch,type,data|
+              stderr_data+=data
+            end
+
+            channel.on_request("exit-status") do |ch,data|
+              exit_code = data.read_long
+            end
+
+            channel.on_request("exit-signal") do |ch, data|
+              exit_signal = data.read_long
+            end
+          end
+        end
+        s.loop
+        [stdout_data, stderr_data, exit_code, exit_signal]
       end
+    end
+
+    def cmd!(command)
+      o, e, s, i = cmd(command)
+      return [o, e] if s == 0
+      # Otherwise exit was non-zero
+      ex = CommandFailedError.new(o, e, s, i)
+      raise ex
     end
 
     def chef_path(*args)
@@ -174,9 +213,21 @@ module Gersberms
       command += " --json-attributes #{chef_path('node.json')}"
       command += " --override-runlist '#{@options[:runlist].join(',')}'"
       logger.debug command
-      output = cmd(command)
-      logger.debug 'Chef output:'
-      logger.debug output
+      begin
+        stdout, _, _, _ = cmd!(command)
+      rescue CommandFailedError => e
+        logger.error "Chef run failed!"
+        logger.error "Chef stdout:"
+        logger.error e.stdout
+        logger.error "Chef stderr:"
+        logger.error e.stderr
+        logger.error "Chef exit status:"
+        logger.error e.exit_status
+        interact if @options[:interactive]
+        raise RuntimeError, 'Chef run failed!'
+      end
+      logger.debug 'Chef stdout:'
+      logger.debug stdout
     end
 
     def create_ami
@@ -219,15 +270,22 @@ module Gersberms
       @key_pair.delete if @key_pair
     end
 
+    def write_keypair
+      @key_path = File.join('/tmp', @instance.id + '.pem')
+      File.write(@key_path, @key_pair.private_key)
+      File.chmod(0600, @key_path)
+    end
+
+    def cleanup_keypair
+      FileUtils.rm(@key_path) if File.exist?(@key_path)
+    end
+
     def interact
       logger.info "Pausing to allow user to interact with #{@instance.id}"
-      key_path = File.join('/tmp', @instance.id + '.pem')
-      File.write(key_path, @key_pair.private_key)
-      File.chmod(0600, key_path)
       puts <<-EOF
 You can ssh to the instance with the following:
 
-    ssh #{@options[:ssh_user]}@#{@instance.public_ip_address} -i #{key_path}
+    ssh #{@options[:ssh_user]}@#{@instance.public_ip_address} -i #{@key_path}
 
 When you are done hit Enter to continue.
       EOF
@@ -242,6 +300,7 @@ When you are done hit Enter to continue.
       preflight
       create_keypair
       create_instance
+      write_keypair if @options[:interactive]
       interact if @options[:interactive]
       install_chef
       upload_cookbooks
@@ -252,11 +311,13 @@ When you are done hit Enter to continue.
       create_ami
       destroy_instance
       destroy_keypair
+      cleanup_keypair
       @image.id
     rescue => e
       logger.error "Failed!: #{e.message} \n#{e.backtrace.join("\n")}"
       destroy_instance
       destroy_keypair
+      cleanup_keypair
     end
   end
 end
