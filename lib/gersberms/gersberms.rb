@@ -277,7 +277,7 @@ module Gersberms
     end
 
     def cleanup_keypair
-      FileUtils.rm(@key_path) if File.exist?(@key_path)
+      FileUtils.rm_f(@key_path) if @key_path
     end
 
     def interact
